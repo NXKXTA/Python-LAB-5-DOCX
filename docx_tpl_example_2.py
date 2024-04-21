@@ -1,42 +1,48 @@
-import datetime as dt
+import csv
+import os
 from docxtpl import DocxTemplate
 
-number = 0
+marathon_path = './data_marathon.csv'
+if not os.path.exists(marathon_path):
+    print("Нет файла с марафоном")
+    exit()
 
-while True:
-    template = DocxTemplate("template_2.docx")
+with open(marathon_path, 'r', encoding="utf-8") as input_csv_file:
+    reader = csv.reader(input_csv_file, delimiter=",")
+    all_marathons = list(reader)
 
-    number += 1
+current_year = None
+template = DocxTemplate("Shablon.docx")
 
-    seller = input("Введите имя продавца: ")
+number = 0  # Для отслеживания номера марафона
 
-    goods = dict()
-    while True:
-        title = input("Введите название товара: ")
-        price = int(input("Введите цену: "))
-        goods[title] = price
+for marathon in all_marathons:
+    number += 1  # Увеличиваем номер марафона
+    year = marathon[0]
+    city = marathon[5]
+    winner = marathon[2]
+    winner_name = marathon[1]
+    time = marathon[4]
 
-        one_more_item = input("Добавить ещё один товар в чек? y/n: ")
-        if one_more_item == "n":
-            break
+    # Проверяем, начинается ли новый год
+    if year != current_year:
+        # Если это не первый год, добавляем разрыв страницы
+        if current_year is not None:
+            template.add_page_break()
 
-    is_discount = bool(int(input("Есть ли скидка? 1/0: ")))
+        current_year = year
 
-    total = sum(goods.values()) * 0.95 if is_discount else sum(goods.values())
+    # Добавляем информацию о марафоне
 
     context = {
-        "number": number,
-        "seller": seller,
-        "date": dt.date.today(),
-        "time": dt.datetime.now().strftime("%H:%M"),
-        "goods": goods,
-        "discount": is_discount,
-        "total": total
-
+        'number': number,
+        'year': year,
+        'city': city,
+        'men': winner_name,
+        'time': time,
     }
-    template.render(context)
-    template.save(str(number) + ".docx")
 
-    one_more_receipt = input("Оформить ещё один чек? y/n: ")
-    if one_more_receipt == "n":
-        break
+    template.render(context)
+
+# Сохраняем результат в одном файле
+template.save("Marathon_results.docx")
